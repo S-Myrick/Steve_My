@@ -1,0 +1,77 @@
+job_id = 'insert job_ID' #@param {type:"string"}
+api_token = "insert_token" #@param {type:"string"}
+max_words =  1000#@param {type:"integer"}
+remove_words = "right think know a about after all also always am an and any are at be been being but by came can cant come  could did didn didn't do does doesn't doing don't else for from get give goes going had happen  has have having how i if ill i'm in into is isn't it its i've just keep let like made make  many may me mean more most much no not now of only or our really said say see some something  take tell than that the their them then they thing this to try up us use used uses very  want was way we what when where which who why will with without wont you your youre " #@param {type:"string"}
+#remove words example: word1 word2 word3
+
+import requests
+
+# Get information of a job in Verbit
+endpoint = 'https://api.verbit.co/api/job/info?'
+
+url = (endpoint +
+      'v=4'
+      '&api_token=' + api_token +
+      '&job_id=' + str(job_id)
+      )
+
+response = requests.get(url)
+payload1 = response.json()
+job_name = payload1.get("job_name")
+
+# Get Transcription of a job in Verbit
+endpoint = 'https://api.verbit.co/api/job/get_caption?'
+
+url = (endpoint +
+       'v=4'
+       '&api_token=' + api_token +
+       '&job_id=' + str(job_id)
+       )
+
+response = requests.get(url)
+transcript = response.text
+
+
+# Data Cleanup #1
+#let's remove words that are less than 3 chars
+import re
+shortword = re.compile(r'\W*\b\w{1,2}\b')
+transcript = (shortword.sub('', transcript))
+
+# Data cleanup #2
+#let's remove stopwords and other unwanted words
+from os import path
+from PIL import Image, ImageEnhance
+import numpy as np
+import nltk
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
+from nltk.corpus import stopwords
+
+# download stopwords
+nltk.download("stopwords")
+stopwords.words('english')
+stop_words = stopwords.words('english')
+stop_words.extend(STOPWORDS)
+stop_words.extend(['http', 'https', 'from', 'next', 'third', 'Speaker', 'one', 'subject', 're', 'edu', 'use','will','aap','co','day','user','stock','today','week','year'])
+stop_words.extend(remove_words.split(" "))
+
+# Set the path to the Nunito font file
+font_path = "/content/Nunito-Regular.ttf"
+
+# Load mask image
+mask = np.array(Image.open("/content/Logo sign Verbit full color.jpg"))
+mask_colors = ImageColorGenerator(mask)
+
+
+print(job_name)
+plt.figure(figsize = (20,20)) 
+wordcloud = WordCloud(stopwords=stop_words, max_font_size=256, max_words=max_words, mask=mask, background_color="white", random_state=42, font_path=font_path, color_func=mask_colors).generate(transcript)
+fig, ax = plt.subplots(1,1, figsize = (17,9))
+
+
+# Display word cloud as logo
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.axis('off')
+plt.show()
+
